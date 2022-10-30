@@ -5,17 +5,38 @@ import { cors } from 'middy/middlewares'
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
 import { getUserId } from '../utils';
 import { createTodo } from '../../businessLogic/todos'
+import {createLogger} from "../../utils/logger";
+
+const logger = createLogger('createTodo');
 
 export const handler = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const newTodo: CreateTodoRequest = JSON.parse(event.body)
-    // TODO: Implement creating a new TODO item
+    const userId = getUserId(event);
 
-    return undefined
+    try {
+      const todo = await createTodo(newTodo, userId);
+      logger.info('New todo', todo);
+
+      return {
+        statusCode: 201,
+        body: JSON.stringify({
+          item: todo,
+        }),
+      };
+    }
+    catch (e) {
+      logger.error('Error creating todo', e);
+      return {
+        statusCode: 500,
+        body: 'Internal Server Error',
+      };
+    }
+  }
 )
 
 handler.use(
   cors({
     credentials: true
   })
-)
+);
